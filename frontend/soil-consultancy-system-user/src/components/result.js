@@ -1,39 +1,53 @@
-import { Typography } from "@material-ui/core";
+import React from "react"
+import Typography from '@material-ui/core/Typography';
 import { withStyles } from "@material-ui/core/styles";
-import React from "react";
-import { Card, Grid} from '@material-ui/core';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Paper from '@material-ui/core/Paper';
+import { Card, Divider, Grid} from '@material-ui/core';
+import reportService from "../service/reportService";
+import Cookies from "js-cookie";
+import {Redirect} from "react-router-dom"
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
-import Paper from '@material-ui/core/Paper';
-import reportService from "../service/reportService"
-
+import GoogleLogout from "react-google-login"
 
 const useStyles = (theme) => ({
-
-    title: {
-        flexGrow: 1,
-        textAlign:'left',
-      },
-    card:{
-    backgroundColor: "#e1f5fe",
-    color:"white",
-    width:450,
-    height:250
+    root: {
+      flexGrow: 1,
     },
-    typo:{
-        textAlign:"center",
-        color:"black"
+    title: {
+      flexGrow: 1,
+      textAlign:'left',
+    },
+    table: {
+        width: 1100,
+        margin:'auto',
+        backgroundColor:"#e8f5e9"
+    },
+    tablerow:{
+        borderColor: "black"
+    },
+    card:{
+        width:420,
+        height:220,
+        paddingTop:20,
+        backgroundColor:"#e8f5e9"
     }
+})
 
-});
 
-
-class result extends React.Component{
-
+class result extends React.Component
+{
     constructor(props){
         super(props);
         this.state={
-            reports:[]
+            reports:[],
+            loggedOut:false
         }
     }
 
@@ -41,171 +55,118 @@ class result extends React.Component{
         this.retrieveAllReport();
       }
     
-      retrieveAllReport() {
+    retrieveAllReport() {
         reportService.retrieveAllReport().then((response) => {
-          console.log(response);
-          this.setState({reports: response.data})
-        })
+        console.log(response);
+        this.setState({reports: response.data})
+      })
+    }
+
+    userlogout = () => {
+        Cookies.remove("name");
+        Cookies.remove("email");
+        this.setState(
+          {
+            loggedOut:true
+          }
+        )
       }
+    
 
     render(){
-        const { classes } = this.props;
+        const {classes} = this.props;
+        if(Cookies.get("name")===undefined) return <Redirect to = "/" />
+        if(this.state.loggedOut){
+            console.log(this.state.loggedOut)
+            return(
+            <Redirect to = "/" />
+            );
+          }
         return(
-            <div>
+            <div className={classes.root}>
                 <AppBar position="static">
                     <Toolbar>
                         <Typography variant="h5" className={classes.title}> Soil Consultancy System</Typography>
+                        <GoogleLogout 
+                        className="google-logout-button"
+                        clientId="402744950664-cefekape7t5m71d9ok33fun1pg5hgdb7.apps.googleusercontent.com"
+                        buttonText="Logout"
+                        onLogoutSuccess={this.userlogout}
+                        onFailure={this.responseGoogle}
+                        isSignedIn={false}
+                        cookiePolicy={"single_host_origin"} /> 
                     </Toolbar>
                 </AppBar>
-                <Typography variant="h5" style={{marginTop:100}}><b>CONSULTANCY REPORT</b></Typography>
-                <Grid container spacing={6} style={{marginLeft:30, marginTop:20}}>
+                <div> 
+                <Typography variant="h5" style={{marginTop:100}}><b>Consultancy Report</b></Typography>
+                <Paper style={{width:1150,margin:'auto',marginTop:20,backgroundColor:"#c8e6c9"}}>
+                <TableContainer>
+                    <Table className={classes.table} aria-label="simple table">
+                        <TableHead>
+                        <TableRow classname={classes.tablerow}>
+                            <TableCell align="center">Crop Type</TableCell>
+                            <TableCell align="center">Date</TableCell>
+                            <TableCell align="center">Nitrogen</TableCell>
+                            <TableCell align="center">Ideal level of Nitrogen</TableCell>
+                            <TableCell align="center">Phosphor</TableCell>
+                            <TableCell align="center">Ideal level of Phosphor</TableCell>
+                            <TableCell align="center">Potassium</TableCell>
+                            <TableCell align="center">Ideal level of Potassium</TableCell>
+                        </TableRow>
+                        </TableHead>
+                        <TableBody>
+                        {this.state.reports.map((report) => (
+                            <TableRow>
+                            <TableCell align="center">{report.crop}</TableCell>
+                            <TableCell align="center">{report.date}</TableCell>
+                            <TableCell align="center">{report.nitrogen}</TableCell>
+                            <TableCell align="center" rowSpan={report.length}>112-228</TableCell>
+                            <TableCell align="center">{report.phosphor}</TableCell>
+                            <TableCell align="center" rowSpan={report.length}>9-22</TableCell>
+                            <TableCell align="center">{report.potassium}</TableCell>
+                            <TableCell align="center" rowSpan={report.length}>60-120</TableCell>
+                            <TableCell align="center"></TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer></Paper>
+                </div>    
+                <Grid container spacing={6} style={{marginTop:20,marginLeft:70}}>
                     <Grid item>
-                        <Card className={classes.card}> 
-                            {this.state.reports.map((report) => 
-                            {
-                                if(report.nitrogen < 112)
-                                {
-                                    return(<div>
-                                    <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Nitrogen</b></Typography>
-                                    <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                    <Typography variant= "body1" className={classes.typo}>Amount of Nitrogen Present : {report.nitrogen} kg/acre</Typography>
-                                    <Typography variant= "body1"className={classes.typo}>Ideal dose of Nitrogen required : 112-228 kg/acre </Typography>
-                                    <Typography variant= "body1" className={classes.typo} style={{color:"red"}}><b>Deficiency</b></Typography>
-                                    <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Urea (46% N)</Typography>
-                                    <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.nitrogen}+10)*100)/46 kg </b></Typography>
-                                    </div>
-                                    );
-                                }
-                                else if(report.nitrogen>=112 && report.nitrogen<=228){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Nitrogen</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Nitrogen Present : {report.nitrogen} kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Nitrogen required : 112-228 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"green"}}><b>Ideal</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Urea (46% N)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>({report.nitrogen}*100)/46 kg </b></Typography>
-                                        </div>
-                                    )
-                                }
-                                else if(report.nitrogen>228){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Nitrogen</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Nitrogen Present : {report.nitrogen} kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Nitrogen required : 112-228 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"blue"}}><b>Over-Dose</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Urea (46% N)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.nitrogen}-10)*100)/46 kg </b></Typography>
-                                        </div>
-                                    )
-                                }
-                            }
-                            )}
+                        <Card className={classes.card}>
+                            <Typography variant="h5" color="primary">Nitrogen<br /><Divider /></Typography>
+                            <Typography>Fertilizer to be applied : Urea(46% N) <br />
+                                <span style={{color:"red"}}>Deficiency</span>: Amount of fertilizer to be applied: <br />((Ideal+10)*100)/46<br /> 
+                                <span style={{color:"green"}}>Ideal</span>: Amount of fertilizer to be applied: <br />((Ideal)*100)/46 <br />
+                                <span style={{color:"blue"}}>Over-dose</span>: Amount of fertilizer to be applied: <br />((Ideal-10)*100)/46
+                            </Typography>  
                         </Card>
                     </Grid>
                     <Grid item>
                         <Card className={classes.card}>
-                            {this.state.reports.map((report) => {
-                                if(report.phosphor<9){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Phosphor</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Phosphor Present : {report.phosphor}kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Phosphor required : 9-22 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"red"}}><b>Deficiency</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Single Super Phosphate (16% P)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.phosphor}+10)*100)/16 kg</b></Typography>
-                                        </div>
-                                    );
-                                }
-                                else if(report.phosphor >=9 && report.phosphor<=22){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Phosphor</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Phosphor Present : {report.phosphor}kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Phosphor required : 9-22 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"green"}}><b>Ideal</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Single Super Phosphate (16% P)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>({report.phosphor}*100)/16 kg</b></Typography>
-                                        </div>
-                                    )
-                                }
-                                else if(report.phosphor>22){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Phosphor</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Phosphor Present : {report.phosphor}kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Phosphor required : 9-22 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"blue"}}><b>Over-dose</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Single Super Phosphate (16% P)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.phosphor}-10)*100)/16 kg</b></Typography>
-                                        </div>
-                                    )
-                                }
-                            }
-                       )} 
-                    </Card>
+                            <Typography variant="h5" color="primary">Phosphor<br /><Divider /></Typography>
+                                <Typography>Fertilizer to be applied : Single Super Phosphate(16% P)
+                                <br /><span style={{color:"red"}}>Deficiency</span>: Amount of fertilizer to be applied: <br />((Ideal+10)*100)/16 <br /> 
+                                <span style={{color:"green"}}>Ideal</span>: Amount of fertilizer to be applied: <br />((Ideal)*100)/16 <br />
+                                <span style={{color:"blue"}}>Over-dose</span>: Amount of fertilizer to be applied: <br />((Ideal-10)*100)/16
+                            </Typography>  
+                        </Card>
                     </Grid>
                     <Grid item>
                         <Card className={classes.card}>
-                            {this.state.reports.map((report)=>{
-                                if(report.potassium<60){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Potassium</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Potassium Present : {report.potassium} kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Potassium required : 60-120 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"red"}}><b>Deficiency</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Meuriate of Potash (60% K)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.potassium}+10)*100)/60 kg</b></Typography>
-                                        </div>
-                                    )
-                                }
-                                else if(report.potassium>=60 && report.potassium<=120){
-                                    return(
-                                        <div>
-                                          <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Potassium</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Potassium Present : {report.potassium} kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Potassium required : 60-120 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"green"}}><b>Ideal</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Meuriate of Potash (60% K)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>({report.potassium}*100)/60 kg</b></Typography>  
-                                        </div>
-                                    )
-                                }
-                                else if(report.potassium>120){
-                                    return(
-                                        <div>
-                                            <Typography variant="h6" className={classes.typo} style={{marginTop:10}}><b>Potassium</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Crop Type: {report.crop}</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Potassium Present : {report.potassium} kg/acre</Typography>
-                                            <Typography variant= "body1"className={classes.typo}>Ideal dose of Potassium required : 60-120 kg/acre </Typography>
-                                            <Typography variant= "body1" className={classes.typo} style={{color:"blue"}}><b>Over-dose</b></Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Fertilizer to be applied : Meuriate of Potash (60% K)</Typography>
-                                            <Typography variant= "body1" className={classes.typo}>Amount of Fertilizer to be applied = <b>(({report.potassium}-10)*100)/60 kg</b></Typography>  
-                                        </div>
-                                    )
-                                }
-                            }
-                            
-                            )}
-                        
+                            <Typography variant="h5" color="primary">Potassium<br /><Divider /></Typography>
+                            <Typography>Fertilizer to be applied : Mueriate of Potash(60% K)
+                                <br /><span style={{color:"red"}}>Deficiency</span>: Amount of fertilizer to be applied: <br />((Ideal+10)*100)/60 <br />
+                                <span style={{color:"green"}}>Ideal</span>: Amount of fertilizer to be applied: <br />((Ideal)*100)/60 <br />
+                                <span style={{color:"blue"}}>Over-dose</span>: Amount of fertilizer to be applied: <br />((Ideal-10)*100)/60
+                            </Typography>  
                         </Card>
                     </Grid>
-                </Grid>
-                
-                <Typography variant="h6" style={{marginTop:50}}>Please make sure to apply the correct amount of fertilizers to ensure your crop's best yeild</Typography>
-            </div>
-        );
+                </Grid>    
+                </div>
+        )
     }
-
 }
+
 export default withStyles(useStyles)(result);

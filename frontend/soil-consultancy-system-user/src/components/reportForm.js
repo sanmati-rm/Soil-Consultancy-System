@@ -10,9 +10,10 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Slide from "@material-ui/core/Slide";
-import {Link} from "react-router-dom"
+import { Redirect } from 'react-router-dom';
 import { Card, Grid, MenuItem } from '@material-ui/core';
-
+import { GoogleLogout } from "react-google-login";
+import Cookies from "js-cookie"
 
 function Transition(props) {
   return <Slide direction="up" {...props} />;
@@ -25,23 +26,15 @@ const useStyles = (theme) => ({
       flexGrow: 1,
       textAlign:'left',
     },
-    card2:{
-      backgroundColor : "#e1f5fe",
-      color : "white",
-      align:"center",
-      width : 600,
-      height: 210,
-    },
     card1:{
-      backgroundColor: "#e1f5fe",
+      backgroundColor: "#e8f5e9",
       color:"white",
       width:600,
-      height:190,
+      height:450,
     },
     card3:{
-      backgroundColor: "#e1f5fe",
-      color:"white",
-      width:450,
+      backgroundColor: "#e8f5e9",
+      width:600,
       height:120,
     },
     link:{
@@ -92,7 +85,11 @@ class reportForm extends React.Component{
         molybdenum:null,
         boron:null,
         chlorine:null,
-        crop:""
+        nickel:null,
+        crop:"",
+        date:null,
+        email:Cookies.get("email"),
+        loggedOut:false,
       };
     }
     
@@ -126,6 +123,13 @@ class reportForm extends React.Component{
       });
     }
 
+    userlogout = () => {
+      Cookies.remove("name");
+      Cookies.remove("email");
+      this.setState({
+        loggedOut:true
+      })
+    }
 
     handleSubmit = () => {
       if(
@@ -143,6 +147,7 @@ class reportForm extends React.Component{
         this.state.boron === null ||
         this.state.chlorine === null ||
         this.state.nickel === null ||
+        this.state.date === null ||
         this.state.crop === ""
       )
         {
@@ -164,33 +169,84 @@ class reportForm extends React.Component{
           boron:this.state.boron,
           chlorine:this.state.chlorine,
           nickel:this.state.nickel,
-          crop:this.state.crop
+          date:this.state.date,
+          crop:this.state.crop,
+          email:this.state.email
+
         };
       console.log(report);
+    
       reportService.createReport(report).then((response) => {
         
         this.retrieveAllReport();
       })
 
-    }
-    
+      }  
     }
     render(){
         const { classes } = this.props;
+        const user_name = Cookies.get("name");
+        if(Cookies.get("name")===undefined) return <Redirect to = "/" />
+        if(this.state.loggedOut){
+          console.log(this.state.loggedOut)
+          return(
+          <Redirect to = "/" />
+          );
+        }
         return(
             <div className = {classes.formPage,classes.root}>
                 <AppBar position="static">
                     <Toolbar>
                         <Typography variant="h5" className={classes.title}> Soil Consultancy System</Typography>
+                        <Button variant="contained" color="secondary" style={{marginRight:5}} href="/result"> Existing Reports</Button>
+                        <GoogleLogout 
+                        className="google-logout-button"
+                        clientId="402744950664-cefekape7t5m71d9ok33fun1pg5hgdb7.apps.googleusercontent.com"
+                        buttonText="Logout"
+                        onLogoutSuccess={this.userlogout}
+                        onFailure={this.responseGoogle}
+                        isSignedIn={false}
+                        cookiePolicy={"single_host_origin"} /> 
                     </Toolbar>
                 </AppBar>
+                <Typography variant="h4" style={{marginTop:20}}>WELCOME {user_name}</Typography>
                 <Typography variant="h4" style={{marginTop:20}}>REPORT DETAILS</Typography>
                 <Typography variant="subtitle1">Please enter the report details below</Typography>
                 <ValidatorForm autoComplete="off" style={{marginTop:20}} onSubmit={this.handleSubmit}>
                 <Grid container spacing={10} style={{marginLeft:"5%"}}>
+                 <Grid item>
+                   <Card className={classes.card3}>
+                   <Typography variant="h6" style={{align:"center",color:"black",marginTop:5}}>CROP TYPE</Typography>
+                    <TextValidator
+                    style={{width:500}}
+                    select
+                    label="Crop Type"
+                    onChange={this.handleChange("crop")}
+                    value={this.state.crop}
+                    >
+                       {Crop.map((option) => (
+                         <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                       ))}
+                     </TextValidator>
+                    </Card></Grid>
+                    <Grid item>
+                   <Card className={classes.card3}>
+                   <Typography variant="h6" style={{align:"center",color:"black",marginTop:5}}>DATE</Typography>
+                     <TextValidator
+                      style={{ width: 500 }}
+                      label="DATE"
+                      type="date"
+                      defaultValue="2001-01-01"
+                      onChange={this.handleChange("date")}
+                      value={this.state.date}
+                        />
+                   </Card>
+                 </Grid>
+               </Grid>
+                <Grid container spacing={10} style={{marginLeft:"5%"}}>
                   <Grid item>
-                    <Card className={classes.card1}>
-                        <Typography variant="h6" style={{color:"black"}}>PRIMARY NUTRIENTS</Typography>
+                    <Card className={classes.card1} >
+                        <Typography variant="h6" style={{color:"black",marginTop:40}}>PRIMARY NUTRIENTS</Typography>
                         <TextValidator
                         style={{ width: 500 }}
                         label="Nitrogen(kg/acre)"
@@ -209,9 +265,7 @@ class reportForm extends React.Component{
                         onChange={this.handleChange("potassium")}
                         value={this.state.potassium}
                         /> 
-                    </Card></Grid>
-                    <Grid item><Card className={classes.card1}>
-                      <Typography variant="h6" style={{color:"black"}}>SECONDARY NUTRIENTS</Typography>
+                        <Typography variant="h6" style={{color:"black",marginTop:5}}>SECONDARY NUTRIENTS</Typography>
                         <TextValidator
                         style={{ width: 500 }}
                         label="Calcium(ppm)"
@@ -231,28 +285,25 @@ class reportForm extends React.Component{
                         value={this.state.sulphur}
                         /> 
                     </Card></Grid>
-               </Grid>
-               <Typography variant="h6" style={{align:"center", marginTop:20}}>MICRO-NUTRIENTS</Typography>
-               <Grid container spacing={10} style={{marginLeft:"5%"}}>
-                 <Grid item>
-                   <Card className={classes.card2}>
-                   <TextValidator
+                    <Grid item><Card className={classes.card1}>
+                    <Typography variant="h6" style={{color:"black",marginTop:5}}>MICRO-NUTRIENTS</Typography>
+                    <TextValidator
                     style={{ width: 500 }}
                     label="Iron(ppm)"
                     onChange={this.handleChange("iron")}
-                    value={this.state.copper}
+                    value={this.state.iron}
                     /> 
                     <TextValidator
                     style={{ width: 500 }}
                     label="Zinc(ppm)"
                     onChange={this.handleChange("zinc")}
-                    value={this.state.molybdenum}
+                    value={this.state.zinc}
                     /> 
                       <TextValidator
                     style={{ width: 500 }}
                     label="Manganese(ppm)"
                     onChange={this.handleChange("manganese")}
-                    value={this.state.boron}
+                    value={this.state.manganese}
                     /> 
                     <TextValidator
                     style={{ width: 500 }}
@@ -260,10 +311,6 @@ class reportForm extends React.Component{
                     onChange={this.handleChange("copper")}
                     value={this.state.copper}
                     /> 
-                   </Card>
-                 </Grid>
-                 <Grid item>
-                   <Card className={classes.card2}>
                     <TextValidator
                     style={{ width: 500 }}
                     label="Molybdenum(ppm)"
@@ -288,31 +335,14 @@ class reportForm extends React.Component{
                     onChange={this.handleChange("nickel")}
                     value={this.state.nickel}
                     />
-                   </Card>
-                 </Grid></Grid>
-                 <Grid container spacing={10} style={{marginLeft:"32%"}}>
-                 <Grid item>
-                   <Card className={classes.card3}>
-                   <Typography variant="h6" style={{align:"center",color:"black"}}>CROP TYPE</Typography>
-                    <TextValidator
-                    style={{width:400}}
-                    select
-                    label="Crop Type"
-                    onChange={this.handleChange("crop")}
-                    value={this.state.crop}
-                    >
-                       {Crop.map((option) => (
-                         <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                       ))}
-                     </TextValidator>
-                   </Card>
-                 </Grid>
+                        
+                    </Card></Grid>
                </Grid>
-                    
+               
                 <Button variant="contained" color="primary" type="submit" style={{marginTop:10}}>Confirm</Button>
                 </ValidatorForm>
               
-              <Button variant="contained" href="/result" style={{marginTop:10,backgroundColor:"#00ffff"}}>Let's find out</Button>
+              <Button variant="contained" color="secondary" href="/result" style={{marginTop:10}}>Let's find out</Button>
                 <Dialog
                     open={this.state.open_error_form}
                     TransitionComponent={Transition}

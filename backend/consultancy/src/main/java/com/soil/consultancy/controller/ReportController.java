@@ -14,8 +14,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/soil-consultancy-system")
 @CrossOrigin("*")
-public class ReportController {
-
+public class ReportController
+{
     @Autowired
     private ReportService reportService;
 

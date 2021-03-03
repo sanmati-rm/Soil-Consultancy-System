@@ -6,7 +6,9 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
 import java.lang.Float;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -61,5 +63,12 @@ public class Report {
 
     @NotNull
     private String crop;
+
+    @NotNull
+    @Past
+    private LocalDate date;
+
+    @NotNull
+    private String email;
 }
 

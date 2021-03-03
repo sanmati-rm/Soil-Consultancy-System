@@ -14,6 +14,11 @@ import Slide from "@material-ui/core/Slide";
 import Paper from "@material-ui/core/Paper";
 import { ValidatorForm, TextValidator } from "react-material-ui-form-validator";
 import customerService from '../service/customerService'
+import { Divider } from '@material-ui/core';
+import {Alert,AlertTitle} from "@material-ui/lab"
+import {Snackbar} from "@material-ui/core"
+import { Redirect } from 'react-router-dom';
+import Cookies from 'js-cookie'
 
 
 function Transition(props) {
@@ -29,13 +34,18 @@ class Home extends React.Component{
       customerFirstName:"",
       customerLastName:"",
       open_form : false,
-      open_error_form:false
+      open_error_form:false,
+      isLoggedIn: false,
+      accessToken: "",
+      user_name: "",
+      open_snack_bar:false
     };
+    this.handleInvalid = this.handleInvalid.bind(this);
   }
     
-  componentDidMount(){
-    this.retrieveAllCustomers();
-  }
+  //componentDidMount(){
+    //this.retrieveAllCustomers();
+  //}
 
   retrieveAllCustomers() {
     customerService.retrieveAllCustomers().then((response) => {
@@ -68,8 +78,8 @@ class Home extends React.Component{
   handleSubmit =() =>{
     if(
       this.state.customerEmail === "" ||
-      this.state.customerFirstName === null ||
-      this.state.customerLastName === null 
+      this.state.customerFirstName === "" ||
+      this.state.customerLastName === "" 
     )
     {
       this.openErrorForm();
@@ -80,18 +90,61 @@ class Home extends React.Component{
         customerFirstName:this.state.customerFirstName,
         customerLastName:this.state.customerLastName
       }
-      console.log(customer);
+      
       customerService.createCustomer(customer).then((response) => {
           this.setState({open_form:false});
-           this.retrieveAllCustomers();
+         
       });
     }
   }
+  handleInvalid(){
+    this.setState({open_snack_bar : true})
+  }
+
+  handleSignUp = () =>{
+    this.props.history.push(`/reportForm`)
+  }
+
+  userlogin = (res) => {
+    const accessToken = res.tokenId;
+    var axios = require("axios");
+
+    var config = {
+      method: "post",
+      url: "http://localhost:8082/soil-consultancy/auth",
+      headers: {
+        Authorization: "Bearer " + accessToken,
+      },
+    };
+    axios(config)
+      .then((response) => {
+        this.setState((state) => ({
+          isLoggedIn: true,
+          user_name: response.data.name,
+          user_email: response.data.email
+        }));
+        console.log(JSON.stringify(response.data));
+      })
+      .catch(function (error) {
+        console.log(error);
+        this.handleInvalid();
+      }.bind(this));
+    }
 
     render(){
-
+      if(this.state.isLoggedIn){
+        Cookies.set("name", this.state.user_name )
+        Cookies.set("email", this.state.user_email )
+        return <Redirect to="/reportForm" />
+      }
         return(
             <div className="home">
+               <Snackbar open={this.state.open_snack_bar} autoHideDuration={6000} onClose={() => {}} style={{marginTop : "50%", marginRight : "15%"}}>
+              <Alert severity="error">
+              <AlertTitle>Oops!</AlertTitle>
+                Please Sign Up by creating your account!
+              </Alert>
+              </Snackbar>
                 <Card className="Card" style={{backgroundColor:'#c8e6c9'}}>
                     <CardActionArea>
                      <CardContent>
@@ -124,7 +177,7 @@ class Home extends React.Component{
                     <Paper
                     style={{
                       width: "500px",
-                      height: "350px",
+                      height: "450px",
                       paddingLeft: "2%",
                       paddingRight: "0%",
                       paddingTop: "1%",
@@ -163,6 +216,12 @@ class Home extends React.Component{
                     Submit
                   </Button></center>
                 </ValidatorForm></center>
+                <br/>
+                <Divider />
+                <br/>
+                <center><Typography variant="subtitle1">Don't have a Google Account? Create one here</Typography>
+                <Button href = "https://accounts.google.com/signup/v2/webcreateaccount?hl=en&flowName=GlifWebSignIn&flowEntry=SignUp"
+                      target = "_blank" variant="contained" color="primary">Create New Account</Button></center>
                 </Paper>
                   </DialogContent>
                    <DialogActions>

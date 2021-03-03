@@ -11,7 +11,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Year;
 import java.util.List;
+import java.util.UUID;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.BDDMockito.given;
@@ -49,6 +51,7 @@ public class ReportServiceControllerTest {
         report.setZinc(100f);
         report.setCrop("Maize");
 
+
         List<Report> allReports = singletonList(report);
 
         given(reportController.getAllReports()).willReturn(allReports);
@@ -62,6 +65,7 @@ public class ReportServiceControllerTest {
     @Test
     public void createReport() throws Exception {
         Report report = new Report();
+        report.setReportId(UUID.fromString("f8f992a0-80e0-419e-b416-7f89412fab83"));
         report.setNitrogen(120f);
         report.setPhosphor(20f);
         report.setPotassium(100f);
@@ -77,6 +81,7 @@ public class ReportServiceControllerTest {
         report.setSulphur(100f);
         report.setZinc(100f);
         report.setCrop("Maize");
+
 
         given(reportController.createReport(report)).willReturn(report);
 
